@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to CSV Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .description {
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+            max-width: 600px;
+        }
+        .drop-zone {
+            border: 2px dashed #cccccc;
+            border-radius: 10px;
+            width: 300px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #cccccc;
+            margin-bottom: 20px;
+        }
+        .drop-zone.dragover {
+            border-color: #0000ff;
+        }
+        .status {
+            font-size: 16px;
+            color: #333;
+        }
+        .status.success {
+            color: green;
+        }
+        .status.error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="description">
+        <p>This tool extracts transactions from your Spanish N26 joint account bank statement PDF and converts them into a YNAB-compatible CSV file. Unlike individual N26 accounts, joint accounts lack a CSV export feature on the N26 website.</p>
+        <p>Drag and drop your bank statement PDF into the box below, and your CSV file will be automatically downloaded when the process is complete. This process is safe and secure, as no information is uploaded to the internet; everything happens locally on your device.</p>
+    </div>
+    <div class="drop-zone" id="drop-zone" role="alert" aria-live="polite">
+        Drag and drop a PDF file here
+    </div>
+    <div class="status" id="status"></div>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.20.0/full/pyodide.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
