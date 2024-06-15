@@ -6,11 +6,11 @@ This tool extracts transactions from your Spanish N26 joint account bank stateme
 
 - Extracts transactions from PDF bank statements for N26 joint accounts in Spain.
 - Converts the extracted transactions into a CSV format compatible with YNAB (You Need A Budget).
-- Secure: All processing happens locally on your device, ensuring no data is uploaded to the internet.
+- Secure: All processing, including loading Python packages, reading the PDF, running the Python code, and generating the CSV file, is done locally in the browser.
 
 ## How to Use
 
-1. **Open `index.html` in your Browser**
+1. https://mettamatt.github.io/n26Joints/
 
 2. **Drag and Drop your Bank Statement PDF**
 
