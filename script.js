@@ -9,48 +9,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusElement.className = isError ? 'status error' : 'status success';
     }
 
-    function updateProgressBar(percentage) {
-        progressBar.style.display = 'block';
+    function updateProgressBar(percentage, show = true) {
+        progressBar.style.display = show ? 'block' : 'none';
         progress.style.width = `${percentage}%`;
     }
 
-    function hideProgressBar() {
-        progressBar.style.display = 'none';
-        progress.style.width = '0';
-    }
-
-    function handleError(error) {
-        let errorMessage = 'An error occurred.';
-        if (error.message.includes('extract text')) {
-            errorMessage = 'Failed to extract text from the PDF. Please ensure the file is not corrupted.';
-        } else if (error.message.includes('unsupported format')) {
-            errorMessage = 'Unsupported PDF format. Please upload a valid bank statement PDF.';
-        } else if (error.message.includes('load packages')) {
-            errorMessage = 'Failed to load necessary packages. Please check your internet connection and try again.';
-        } else if (error.message.includes('install package')) {
-            errorMessage = 'Failed to install required Python packages.';
+    async function loadPyodideAndPackages() {
+        try {
+            const pyodide = await loadPyodide({
+                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.20.0/full/'
+            });
+            await pyodide.loadPackage(['pandas', 'micropip']);
+            await pyodide.runPythonAsync(`
+                import micropip
+                await micropip.install('pypdf')
+            `);
+            setStatus('Python packages loaded successfully.');
+            return pyodide;
+        } catch (error) {
+            setStatus('Failed to load necessary packages. Please check your internet connection and try again.', true);
+            console.error(error);
         }
-        setStatus(errorMessage, true);
-        console.error(error);
-        hideProgressBar();
     }
 
-    let pyodide = await loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.20.0/full/'
-    });
-
-    // Load necessary Python packages
-    try {
-        await pyodide.loadPackage(['pandas', 'micropip']);
-        await pyodide.runPythonAsync(`
-            import micropip
-            await micropip.install('pypdf')
-        `);
-        setStatus('Python packages loaded successfully.');
-    } catch (error) {
-        handleError(error);
-        return;
-    }
+    const pyodide = await loadPyodideAndPackages();
+    if (!pyodide) return;
 
     // Inline the external Python script
     const script = `
@@ -72,7 +55,7 @@ def parse_transactions(text_by_page):
     transactions = []
     for page_num, page_text in enumerate(text_by_page):
         start_index = page_text.find("Descripción Fecha de reserva Cantidad")
-        if (start_index == -1):
+        if start_index == -1:
             continue
         page_text = page_text[start_index + len("Descripción Fecha de reserva Cantidad"):].strip()
         transaction_regex = re.compile(
@@ -125,23 +108,23 @@ def main(pdf_data):
             const file = files[0];
             if (file.type === 'application/pdf') {
                 setStatus('Processing PDF file...');
-                updateProgressBar(10); // Start progress
+                updateProgressBar(10);
 
                 try {
                     const arrayBuffer = await file.arrayBuffer();
                     const uint8Array = new Uint8Array(arrayBuffer);
 
-                    // Update progress during processing steps
-                    updateProgressBar(30); // During file read
+                    updateProgressBar(30);
                     const [transactionCount, csvData] = await processPdf(uint8Array);
-                    updateProgressBar(70); // During PDF processing
 
+                    updateProgressBar(70);
                     setStatus(`CSV file generated successfully with ${transactionCount} transactions.`);
-                    updateProgressBar(100); // Completion
+                    updateProgressBar(100);
                 } catch (error) {
-                    handleError(error);
+                    setStatus('An error occurred during PDF processing.', true);
+                    console.error(error);
                 } finally {
-                    setTimeout(hideProgressBar, 2000); // Hide progress bar after a short delay
+                    setTimeout(() => updateProgressBar(0, false), 2000);
                 }
             } else {
                 setStatus('Please drop a PDF file.', true);
