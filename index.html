@@ -47,6 +47,20 @@
         .status.error {
             color: red;
         }
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar .progress {
+            height: 20px;
+            width: 0;
+            background-color: #4caf50;
+        }
     </style>
 </head>
 <body>
@@ -58,6 +72,9 @@
         Drag and drop a PDF file here
     </div>
     <div class="status" id="status"></div>
+    <div id="progress-bar" class="progress-bar">
+        <div class="progress"></div>
+    </div>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.20.0/full/pyodide.js"></script>
     <script src="script.js"></script>
 </body>

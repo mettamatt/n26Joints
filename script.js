@@ -1,10 +1,38 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const dropZone = document.getElementById('drop-zone');
     const statusElement = document.getElementById('status');
+    const progressBar = document.getElementById('progress-bar');
+    const progress = document.querySelector('.progress-bar .progress');
 
     function setStatus(message, isError = false) {
         statusElement.textContent = message;
         statusElement.className = isError ? 'status error' : 'status success';
+    }
+
+    function updateProgressBar(percentage) {
+        progressBar.style.display = 'block';
+        progress.style.width = `${percentage}%`;
+    }
+
+    function hideProgressBar() {
+        progressBar.style.display = 'none';
+        progress.style.width = '0';
+    }
+
+    function handleError(error) {
+        let errorMessage = 'An error occurred.';
+        if (error.message.includes('extract text')) {
+            errorMessage = 'Failed to extract text from the PDF. Please ensure the file is not corrupted.';
+        } else if (error.message.includes('unsupported format')) {
+            errorMessage = 'Unsupported PDF format. Please upload a valid bank statement PDF.';
+        } else if (error.message.includes('load packages')) {
+            errorMessage = 'Failed to load necessary packages. Please check your internet connection and try again.';
+        } else if (error.message.includes('install package')) {
+            errorMessage = 'Failed to install required Python packages.';
+        }
+        setStatus(errorMessage, true);
+        console.error(error);
+        hideProgressBar();
     }
 
     let pyodide = await loadPyodide({
@@ -20,8 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         `);
         setStatus('Python packages loaded successfully.');
     } catch (error) {
-        setStatus('Failed to load Python packages.', true);
-        console.error(error);
+        handleError(error);
         return;
     }
 
@@ -45,7 +72,7 @@ def parse_transactions(text_by_page):
     transactions = []
     for page_num, page_text in enumerate(text_by_page):
         start_index = page_text.find("Descripción Fecha de reserva Cantidad")
-        if start_index == -1:
+        if (start_index == -1):
             continue
         page_text = page_text[start_index + len("Descripción Fecha de reserva Cantidad"):].strip()
         transaction_regex = re.compile(
@@ -98,14 +125,23 @@ def main(pdf_data):
             const file = files[0];
             if (file.type === 'application/pdf') {
                 setStatus('Processing PDF file...');
+                updateProgressBar(10); // Start progress
+
                 try {
                     const arrayBuffer = await file.arrayBuffer();
                     const uint8Array = new Uint8Array(arrayBuffer);
+
+                    // Update progress during processing steps
+                    updateProgressBar(30); // During file read
                     const [transactionCount, csvData] = await processPdf(uint8Array);
+                    updateProgressBar(70); // During PDF processing
+
                     setStatus(`CSV file generated successfully with ${transactionCount} transactions.`);
+                    updateProgressBar(100); // Completion
                 } catch (error) {
-                    setStatus('Failed to process PDF file.', true);
-                    console.error(error);
+                    handleError(error);
+                } finally {
+                    setTimeout(hideProgressBar, 2000); // Hide progress bar after a short delay
                 }
             } else {
                 setStatus('Please drop a PDF file.', true);
