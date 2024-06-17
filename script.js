@@ -17,11 +17,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadPyodideAndPackages() {
         try {
             const pyodide = await loadPyodide({
-                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.20.0/full/'
+                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.1/core/'
             });
-            await pyodide.loadPackage(['pandas', 'micropip']);
+            await pyodide.loadPackage('micropip');
             await pyodide.runPythonAsync(`
                 import micropip
+                await micropip.install('pandas')
                 await micropip.install('pypdf')
             `);
             setStatus('Python packages loaded successfully.');
@@ -55,7 +56,7 @@ def parse_transactions(text_by_page):
     transactions = []
     for page_num, page_text in enumerate(text_by_page):
         start_index = page_text.find("Descripción Fecha de reserva Cantidad")
-        if start_index == -1:
+        if (start_index == -1):
             continue
         page_text = page_text[start_index + len("Descripción Fecha de reserva Cantidad"):].strip()
         transaction_regex = re.compile(
