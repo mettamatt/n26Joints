@@ -25,7 +25,8 @@
         .drop-zone {
             border: 2px dashed #cccccc;
             border-radius: 10px;
-            width: 300px;
+            width: 100%;
+            max-width: 300px;
             height: 200px;
             display: flex;
             justify-content: center;
@@ -40,6 +41,8 @@
         .status {
             font-size: 16px;
             color: #333;
+            text-align: center;
+            max-width: 600px;
         }
         .status.success {
             color: green;
@@ -55,11 +58,28 @@
             overflow: hidden;
             margin-top: 20px;
             display: none;
+            max-width: 600px;
         }
         .progress-bar .progress {
             height: 20px;
             width: 0;
             background-color: #4caf50;
+        }
+        @media (max-width: 600px) {
+            .description {
+                font-size: 16px;
+                padding: 0 10px;
+            }
+            .drop-zone {
+                width: 90%;
+                height: 150px;
+            }
+            .status {
+                font-size: 14px;
+            }
+            .progress-bar .progress {
+                height: 15px;
+            }
         }
     </style>
 </head>

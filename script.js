@@ -4,9 +4,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const progressBar = document.getElementById('progress-bar');
     const progress = document.querySelector('.progress-bar .progress');
 
-    function setStatus(message, isError = false) {
+    function setStatus(message, isError = false, details = '') {
         statusElement.textContent = message;
         statusElement.className = isError ? 'status error' : 'status success';
+        if (isError) {
+            console.error(`Error: ${message} ${details}`);
+        }
     }
 
     function updateProgressBar(percentage, show = true) {
@@ -28,8 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setStatus('Python packages loaded successfully.');
             return pyodide;
         } catch (error) {
-            setStatus('Failed to load necessary packages. Please check your internet connection and try again.', true);
-            console.error(error);
+            setStatus('Failed to load necessary packages. Please check your internet connection and try again.', true, error.message);
         }
     }
 
@@ -121,8 +123,7 @@ def main(pdf_data):
                     setStatus(`CSV file generated successfully with ${transactionCount} transactions.`);
                     updateProgressBar(100);
                 } catch (error) {
-                    setStatus('An error occurred during PDF processing.', true);
-                    console.error(error);
+                    setStatus('An error occurred during PDF processing.', true, error.message);
                 } finally {
                     setTimeout(() => updateProgressBar(0, false), 2000);
                 }
@@ -140,9 +141,13 @@ transaction_count, csv_data = main(pdf_data)
 transaction_count, csv_data
         `;
 
-        let [transactionCount, csvData] = await pyodide.runPythonAsync(pythonCode);
-        downloadCsv(csvData, 'transactions_ynab.csv');
-        return [transactionCount, csvData];
+        try {
+            let [transactionCount, csvData] = await pyodide.runPythonAsync(pythonCode);
+            downloadCsv(csvData, 'transactions_ynab.csv');
+            return [transactionCount, csvData];
+        } catch (error) {
+            setStatus('Failed to process the PDF file.', true, error.message);
+        }
     }
 
     function downloadCsv(csv, filename) {
