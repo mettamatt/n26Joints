@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF to CSV Converter</title>
+    <title>N26 PDF to CSV Converter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,38 +15,54 @@
             flex-direction: column;
             padding: 20px;
             box-sizing: border-box;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            max-width: 700px;
+        }
+        .title {
+            font-size: 24px;
+            margin-bottom: 20px;
         }
         .description {
             margin-bottom: 20px;
             font-size: 18px;
-            text-align: center;
-            max-width: 600px;
+            line-height: 1.6;
         }
         .drop-zone {
-            border: 2px dashed #cccccc;
+            border: 4px dashed #4caf50;
             border-radius: 10px;
             width: 100%;
-            max-width: 300px;
-            height: 200px;
+            max-width: 400px;
+            height: 250px;
             display: flex;
             justify-content: center;
             align-items: center;
             text-align: center;
-            color: #cccccc;
-            margin-bottom: 20px;
+            color: #4caf50;
+            font-size: 18px;
+            margin: 0 auto 30px auto;
+            background-color: white;
             cursor: pointer;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
         }
         .drop-zone.dragover {
-            border-color: #0000ff;
+            border-color: #3e8e41;
+            background-color: #e8f5e9;
+            color: #3e8e41;
         }
         .file-input {
             display: none;
         }
         .status {
-            font-size: 16px;
-            color: #333;
-            text-align: center;
-            max-width: 600px;
+            font-size: 18px;
+            margin-bottom: 20px;
+            height: 24px; /* Reserve space for one line of text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .status.success {
             color: green;
@@ -63,11 +79,13 @@
             margin-top: 20px;
             display: none;
             max-width: 600px;
+            margin: 0 auto;
         }
         .progress-bar .progress {
             height: 20px;
             width: 0;
             background-color: #4caf50;
+            transition: width 0.3s ease;
         }
         @media (max-width: 600px) {
             .description {
@@ -76,10 +94,11 @@
             }
             .drop-zone {
                 width: 90%;
-                height: 150px;
+                height: 200px;
             }
             .status {
-                font-size: 14px;
+                font-size: 16px;
+                height: 20px; /* Adjust height for smaller font */
             }
             .progress-bar .progress {
                 height: 15px;
@@ -88,17 +107,20 @@
     </style>
 </head>
 <body>
-    <div class="description">
-        <p>This tool extracts transactions from your Spanish N26 joint account bank statement PDF and converts them into a YNAB-compatible CSV file. Unlike individual N26 accounts, joint accounts lack a CSV export feature on the N26 website.</p>
-        <p>Drag and drop your bank statement PDF into the box below, or click to select a file. Your CSV file will be automatically downloaded when the process is complete. This process is safe and secure, as no information is uploaded to the internet; everything happens locally on your device. <a href="https://github.com/mettamatt/n26Joints">Check the source code</a>.</p>
-    </div>
-    <div class="drop-zone" id="drop-zone" role="alert" aria-live="polite">
-        Drag and drop a PDF file here or click to select
-        <input type="file" id="file-input" class="file-input" accept="application/pdf">
-    </div>
-    <div class="status" id="status"></div>
-    <div id="progress-bar" class="progress-bar">
-        <div class="progress"></div>
+    <div class="container">
+        <div class="title">Welcome to the N26 PDF to CSV Converter!</div>
+        <div class="drop-zone" id="drop-zone" role="alert" aria-live="polite">
+            Drag and drop a PDF file here or click to select
+            <input type="file" id="file-input" class="file-input" accept="application/pdf">
+        </div>
+        <div class="status" id="status"></div>
+        <div id="progress-bar" class="progress-bar">
+            <div class="progress"></div>
+        </div>
+        <div class="description">
+            <p>This tool extracts transactions from your Spanish N26 joint account bank statement PDF and converts them into a YNAB-compatible CSV file. Unlike individual N26 accounts, joint accounts lack a CSV export feature on the N26 website.</p>
+            <p>Your CSV file will be automatically downloaded when the process is complete. This process is safe and secure, as no information is uploaded to the internet; everything happens locally on your device. <a href="https://github.com/mettamatt/n26Joints" target="_blank">Check the source code</a>.</p>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
     <script src="script.js"></script>
