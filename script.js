@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
     const statusElement = document.getElementById('status');
     const progressBar = document.getElementById('progress-bar');
     const progress = document.querySelector('.progress-bar .progress');
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 import micropip
                 await micropip.install('pandas')
                 await micropip.install('pypdf')
+                await micropip.install('pyarrow')  # Install pyarrow to resolve warnings
             `);
             setStatus('Python packages loaded successfully.');
             return pyodide;
@@ -108,30 +110,45 @@ def main(pdf_data):
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             const file = files[0];
-            if (file.type === 'application/pdf') {
-                setStatus('Processing PDF file...');
-                updateProgressBar(10);
-
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const uint8Array = new Uint8Array(arrayBuffer);
-
-                    updateProgressBar(30);
-                    const [transactionCount, csvData] = await processPdf(uint8Array);
-
-                    updateProgressBar(70);
-                    setStatus(`CSV file generated successfully with ${transactionCount} transactions.`);
-                    updateProgressBar(100);
-                } catch (error) {
-                    setStatus('An error occurred during PDF processing.', true, error.message);
-                } finally {
-                    setTimeout(() => updateProgressBar(0, false), 2000);
-                }
-            } else {
-                setStatus('Please drop a PDF file.', true);
-            }
+            handleFile(file);
         }
     });
+
+    dropZone.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    });
+
+    async function handleFile(file) {
+        if (file.type === 'application/pdf') {
+            setStatus('Processing PDF file...');
+            updateProgressBar(10);
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+
+                updateProgressBar(30);
+                const [transactionCount, csvData] = await processPdf(uint8Array);
+
+                updateProgressBar(70);
+                setStatus(`CSV file generated successfully with ${transactionCount} transactions.`);
+                updateProgressBar(100);
+            } catch (error) {
+                setStatus('An error occurred during PDF processing.', true, error.message);
+            } finally {
+                setTimeout(() => updateProgressBar(0, false), 2000);
+            }
+        } else {
+            setStatus('Please select a PDF file.', true);
+        }
+    }
 
     async function processPdf(uint8Array) {
         pyodide.globals.set('pdf_data', uint8Array);
