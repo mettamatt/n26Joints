@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadPyodideAndPackages() {
         try {
             const pyodide = await loadPyodide({
-                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.1/core/'
+                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/'
             });
             await pyodide.loadPackage('micropip');
             await pyodide.runPythonAsync(`
@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pyodide = await loadPyodideAndPackages();
     if (!pyodide) return;
 
-    // Inline the external Python script
     const script = `
 import io
 import pandas as pd
