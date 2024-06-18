@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 import micropip
                 await micropip.install('pandas')
                 await micropip.install('pypdf')
-
+                
                 import warnings
                 warnings.filterwarnings("ignore", category=DeprecationWarning)
             `);
