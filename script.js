@@ -28,7 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 import micropip
                 await micropip.install('pandas')
                 await micropip.install('pypdf')
-                await micropip.install('pyarrow')  # Install pyarrow to resolve warnings
+
+                import warnings
+                warnings.filterwarnings("ignore", category=DeprecationWarning)
             `);
             setStatus('Python packages loaded successfully.');
             return pyodide;
