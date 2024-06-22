@@ -122,6 +122,17 @@
             <p>Your CSV file will be automatically downloaded when the process is complete. This process is safe and secure, as no information is uploaded to the internet; everything happens locally on your device. <a href="https://github.com/mettamatt/n26Joints" target="_blank">Check the source code</a>.</p>
         </div>
     </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
     <script src="script.js"></script>
 </body>

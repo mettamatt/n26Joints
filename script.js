@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const progressBar = document.getElementById('progress-bar');
     const progress = document.querySelector('.progress-bar .progress');
 
+    // Disable the drop zone and file input initially
+    dropZone.classList.add('disabled');
+    dropZone.style.pointerEvents = 'none';
+    fileInput.disabled = true;
+
     function setStatus(message, isError = false, details = '') {
         statusElement.textContent = message;
         statusElement.className = isError ? 'status error' : 'status success';
@@ -26,13 +31,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             await pyodide.loadPackage('micropip');
             await pyodide.runPythonAsync(`
                 import micropip
-                await micropip.install('pandas')
                 await micropip.install('pypdf')
                 
                 import warnings
                 warnings.filterwarnings("ignore", category=DeprecationWarning)
             `);
             setStatus('Python packages loaded successfully.');
+            
+            // Enable the drop zone and file input once Pyodide is loaded
+            dropZone.classList.remove('disabled');
+            dropZone.style.pointerEvents = 'auto';
+            fileInput.disabled = false;
+
             return pyodide;
         } catch (error) {
             setStatus('Failed to load necessary packages. Please check your internet connection and try again.', true, error.message);
@@ -44,7 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const script = `
 import io
-import pandas as pd
 import re
 from pypdf import PdfReader
 
@@ -81,17 +90,10 @@ def parse_transactions(text_by_page):
             })
     return transactions
 
-def convert_to_ynab_format(transactions):
-    for transaction in transactions:
-        transaction['Date'] = '/'.join(transaction['Date'].split('.')[::-1])
-    return transactions
-
 def main(pdf_data):
     text_by_page = extract_text_from_pdf(pdf_data)
     transactions = parse_transactions(text_by_page)
-    ynab_data = convert_to_ynab_format(transactions)
-    df = pd.DataFrame(ynab_data)
-    return len(transactions), df.to_csv(index=False)
+    return transactions
     `;
 
     await pyodide.runPythonAsync(script);
@@ -137,11 +139,12 @@ def main(pdf_data):
                 const uint8Array = new Uint8Array(arrayBuffer);
 
                 updateProgressBar(30);
-                const [transactionCount, csvData] = await processPdf(uint8Array);
+                const transactions = await processPdf(uint8Array);
 
                 updateProgressBar(70);
-                setStatus(`CSV file generated successfully with ${transactionCount} transactions.`);
+                setStatus(`CSV file generated successfully with ${transactions.length} transactions.`);
                 updateProgressBar(100);
+                downloadCsv(transactions, 'transactions_ynab.csv');
             } catch (error) {
                 setStatus('An error occurred during PDF processing.', true, error.message);
             } finally {
@@ -156,20 +159,32 @@ def main(pdf_data):
         pyodide.globals.set('pdf_data', uint8Array);
 
         const pythonCode = `
-transaction_count, csv_data = main(pdf_data)
-transaction_count, csv_data
+transactions = main(pdf_data)
+transactions
         `;
 
         try {
-            let [transactionCount, csvData] = await pyodide.runPythonAsync(pythonCode);
-            downloadCsv(csvData, 'transactions_ynab.csv');
-            return [transactionCount, csvData];
+            const transactions = await pyodide.runPythonAsync(pythonCode);
+            return transactions.toJs();
         } catch (error) {
             setStatus('Failed to process the PDF file.', true, error.message);
         }
     }
 
-    function downloadCsv(csv, filename) {
+    function convertToCsv(transactions) {
+        const headers = ["Date", "Payee", "Memo", "Amount"];
+        const csvRows = [headers.join(",")];
+
+        transactions.forEach(transaction => {
+            const values = headers.map(header => transaction[header]);
+            csvRows.push(values.join(","));
+        });
+
+        return csvRows.join("\n");
+    }
+
+    function downloadCsv(transactions, filename) {
+        const csv = convertToCsv(transactions);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
