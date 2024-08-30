@@ -3,26 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N26 PDF to CSV Converter</title>
+    <title>N26 Joint Account PDF to CSV Converter</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-            background-color: #f4f4f9;
-            color: #333;
+          font-family: Arial, sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start; /* Change to flex-start to allow scrolling */
+          height: 100vh;
+          margin: 0;
+          flex-direction: column;
+          padding: 20px;
+          box-sizing: border-box;
+          background-color: #f4f4f9;
+          color: #333;
+          overflow-y: auto; /* Allow vertical scrolling */
         }
-        .container {
-            text-align: center;
-            max-width: 700px;
-        }
-        .title {
+       .container {
+          text-align: center;
+          max-width: 700px;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 20px; /* Ensure space between container and content */
+       }
+       .title {
             font-size: 24px;
             margin-bottom: 20px;
         }
@@ -59,17 +65,65 @@
         .status {
             font-size: 18px;
             margin-bottom: 20px;
-            height: 24px; /* Reserve space for one line of text */
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 100%;
+        }
+        .status-item {
+            width: 100%;
+            max-width: 600px;
+            background-color: #f0f4f7;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
             align-items: center;
+            gap: 10px; /* Space between icon and text */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .status.success {
-            color: green;
+
+        .status-item.success {
+            background-color: #e8f5e9;
+            color: #4caf50;
+            border-color: #4caf50;
         }
-        .status.error {
-            color: red;
+
+        .status-item.error {
+            background-color: #fdd;
+            color: #f44336;
+            border-color: #f44336;
         }
+
+        .status-item.processing {
+            background-color: #e7f3fe;
+            color: #2196f3;
+            border-color: #2196f3;
+        }
+
+        .status-item::before {
+            content: attr(data-icon);
+            margin-right: 10px;
+        }
+
+        .status-item.success::before {
+            content: '✔️';
+        }
+
+        .status-item.error::before {
+            content: '❌';
+        }
+
+        .status-item.processing::before {
+            content: '⏳';
+        }
+
         .progress-bar {
             width: 100%;
             background-color: #f3f3f3;
@@ -79,7 +133,7 @@
             margin-top: 20px;
             display: none;
             max-width: 600px;
-            margin: 0 auto;
+            margin: 20px auto 0 auto; /* Add space at the bottom */
         }
         .progress-bar .progress {
             height: 20px;
@@ -98,28 +152,34 @@
             }
             .status {
                 font-size: 16px;
-                height: 20px; /* Adjust height for smaller font */
+            }
+            .status-item {
+                font-size: 14px;
+                padding: 8px;
             }
             .progress-bar .progress {
                 height: 15px;
+            }
+            .progress-bar {
+                margin-top: 10px; /* Less margin for small screens */
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="title">Welcome to the N26 PDF to CSV Converter!</div>
+        <div class="title">N26 Joint Account PDF to CSV Converter</div>
         <div class="drop-zone" id="drop-zone" role="alert" aria-live="polite">
-            Drag and drop a PDF file here or click to select
-            <input type="file" id="file-input" class="file-input" accept="application/pdf">
+            Drag and drop one or more PDF files here, or click to select
+            <input type="file" id="file-input" class="file-input" accept="application/pdf" multiple>
         </div>
         <div class="status" id="status"></div>
         <div id="progress-bar" class="progress-bar">
             <div class="progress"></div>
         </div>
         <div class="description">
-            <p>This tool extracts transactions from your Spanish N26 joint account bank statement PDF and converts them into a YNAB-compatible CSV file. Unlike individual N26 accounts, joint accounts lack a CSV export feature on the N26 website.</p>
-            <p>Your CSV file will be automatically downloaded when the process is complete. This process is safe and secure, as no information is uploaded to the internet; everything happens locally on your device. <a href="https://github.com/mettamatt/n26Joints" target="_blank">Check the source code</a>.</p>
+            <p>This tool extracts transactions from your Spanish N26 joint account bank statement PDFs and converts them into YNAB-compatible CSV files. It supports multiple file uploads, making it easy to convert several statements at once.</p>
+            <p>Your CSV files will be automatically downloaded when the process is complete. This process is safe and secure—no data is uploaded to the internet; everything happens locally on your device. For more details, you can <a href="https://github.com/mettamatt/n26Joints" target="_blank">check the source code on GitHub</a>.</p>
         </div>
     </div>
     <script>

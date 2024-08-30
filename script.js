@@ -10,12 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     dropZone.style.pointerEvents = 'none';
     fileInput.disabled = true;
 
-    function setStatus(message, isError = false, details = '') {
-        statusElement.textContent = message;
-        statusElement.className = isError ? 'status error' : 'status success';
+    function appendStatus(message, isError = false, details = '') {
+        const statusItem = document.createElement('div');
+        statusItem.className = `status-item ${isError ? 'error' : 'success'}`;
+        statusItem.textContent = message;
         if (isError) {
             console.error(`Error: ${message} ${details}`);
         }
+        statusElement.appendChild(statusItem);
     }
 
     function updateProgressBar(percentage, show = true) {
@@ -36,8 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 import warnings
                 warnings.filterwarnings("ignore", category=DeprecationWarning)
             `);
-            setStatus('Python packages loaded successfully.');
-            
+
             // Enable the drop zone and file input once Pyodide is loaded
             dropZone.classList.remove('disabled');
             dropZone.style.pointerEvents = 'auto';
@@ -45,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             return pyodide;
         } catch (error) {
-            setStatus('Failed to load necessary packages. Please check your internet connection and try again.', true, error.message);
+            appendStatus('Failed to load necessary packages. Please check your internet connection and try again.', true, error.message);
         }
     }
 
@@ -111,10 +112,9 @@ def main(pdf_data):
         e.preventDefault();
         dropZone.classList.remove('dragover');
 
-        const files = e.dataTransfer.files;
+        const files = Array.from(e.dataTransfer.files);
         if (files.length > 0) {
-            const file = files[0];
-            handleFile(file);
+            await handleFiles(files);
         }
     });
 
@@ -123,36 +123,38 @@ def main(pdf_data):
     });
 
     fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            handleFile(file);
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            handleFiles(files);
         }
     });
 
-    async function handleFile(file) {
-        if (file.type === 'application/pdf') {
-            setStatus('Processing PDF file...');
-            updateProgressBar(10);
+    async function handleFiles(files) {
+        for (const file of files) {
+            if (file.type === 'application/pdf') {
+                updateProgressBar(10);
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
 
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                const uint8Array = new Uint8Array(arrayBuffer);
+                    updateProgressBar(30);
+                    const transactions = await processPdf(uint8Array);
 
-                updateProgressBar(30);
-                const transactions = await processPdf(uint8Array);
-
-                updateProgressBar(70);
-                setStatus(`CSV file generated successfully with ${transactions.length} transactions.`);
-                updateProgressBar(100);
-                downloadCsv(transactions, 'transactions_ynab.csv');
-            } catch (error) {
-                setStatus('An error occurred during PDF processing.', true, error.message);
-            } finally {
-                setTimeout(() => updateProgressBar(0, false), 2000);
+                    updateProgressBar(70);
+                    appendStatus(`CSV file generated successfully for ${file.name} with ${transactions.length} transactions.`, false);
+                    updateProgressBar(100);
+                    downloadCsv(transactions, `${file.name.replace(/\.pdf$/i, '')}.csv`);
+                } catch (error) {
+                    appendStatus(`An error occurred during PDF processing for ${file.name}.`, true, error.message);
+                } finally {
+                    setTimeout(() => updateProgressBar(0, false), 2000);
+                }
+            } else {
+                appendStatus(`Please select a valid PDF file. Skipping file: ${file.name}`, true);
             }
-        } else {
-            setStatus('Please select a PDF file.', true);
         }
+
+        appendStatus('All files processed.');
     }
 
     async function processPdf(uint8Array) {
@@ -167,7 +169,7 @@ transactions
             const transactions = await pyodide.runPythonAsync(pythonCode);
             return transactions.toJs();
         } catch (error) {
-            setStatus('Failed to process the PDF file.', true, error.message);
+            appendStatus('Failed to process the PDF file.', true, error.message);
         }
     }
 
