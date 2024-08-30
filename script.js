@@ -53,49 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pyodide = await loadPyodideAndPackages();
     if (!pyodide) return;
 
-    const script = `
-import io
-import re
-from pypdf import PdfReader
-
-def extract_text_from_pdf(pdf_data):
-    with io.BytesIO(pdf_data.to_py()) as file:
-        reader = PdfReader(file)
-        text_by_page = []
-        for page in reader.pages:
-            text = page.extract_text()
-            text_by_page.append(text)
-    return text_by_page
-
-def parse_transactions(text_by_page):
-    transactions = []
-    for page_num, page_text in enumerate(text_by_page):
-        start_index = page_text.find("Descripción Fecha de reserva Cantidad")
-        if (start_index == -1):
-            continue
-        page_text = page_text[start_index + len("Descripción Fecha de reserva Cantidad"):].strip()
-        transaction_regex = re.compile(
-            r'(?P<payee>.+?)\\n(?P<memo>(?:.+\\n)+?)Fecha de valor (?P<fecha_reserva>\\d{2}\\.\\d{2}\\.\\d{4})\\s*(?P<fecha_valor>\\d{2}\\.\\d{2}\\.\\d{4})\\s*(?P<amount>-?\\d{1,3}(?:\\.\\d{3})*,\\d{2}€)',
-            re.MULTILINE
-        )
-        matches = transaction_regex.findall(page_text)
-        for match in matches:
-            payee, memo, fecha_reserva, fecha_valor, amount = match
-            memo = memo.strip().replace("\\n", " ")
-            amount = amount.replace('.', '').replace(',', '.').replace('€', '')
-            transactions.append({
-                'Date': fecha_valor,
-                'Payee': payee.strip(),
-                'Memo': memo,
-                'Amount': amount
-            })
-    return transactions
-
-def main(pdf_data):
-    text_by_page = extract_text_from_pdf(pdf_data)
-    transactions = parse_transactions(text_by_page)
-    return transactions
-    `;
+    const script = ``;
 
     await pyodide.runPythonAsync(script);
 
@@ -140,10 +98,14 @@ def main(pdf_data):
                     updateProgressBar(30);
                     const transactions = await processPdf(uint8Array);
 
-                    updateProgressBar(70);
-                    appendStatus(`CSV file generated successfully for ${file.name} with ${transactions.length} transactions.`, false);
-                    updateProgressBar(100);
-                    downloadCsv(transactions, `${file.name.replace(/\.pdf$/i, '')}.csv`);
+                    if (transactions && transactions.length > 0) {
+                        updateProgressBar(70);
+                        appendStatus(`CSV file generated successfully for ${file.name} with ${transactions.length} transactions.`, false);
+                        updateProgressBar(100);
+                        downloadCsv(transactions, `${file.name.replace(/\.pdf$/i, '')}.csv`);
+                    } else {
+                        appendStatus(`No transactions found in ${file.name}.`, true);
+                    }
                 } catch (error) {
                     appendStatus(`An error occurred during PDF processing for ${file.name}.`, true, error.message);
                 } finally {
@@ -157,19 +119,30 @@ def main(pdf_data):
         appendStatus('All files processed.');
     }
 
+    async function loadPythonCode() {
+        try {
+            const response = await fetch('n26_pdf_extractor.py');
+            if (!response.ok) {
+                throw new Error(`Failed to load Python file: ${response.statusText}`);
+            }
+            return await response.text();
+        } catch (error) {
+            console.error("Error loading Python code:", error);
+            throw error;
+        }
+    }
+
     async function processPdf(uint8Array) {
         pyodide.globals.set('pdf_data', uint8Array);
 
-        const pythonCode = `
-transactions = main(pdf_data)
-transactions
-        `;
-
         try {
+            const pythonCode = await loadPythonCode();
+
             const transactions = await pyodide.runPythonAsync(pythonCode);
-            return transactions.toJs();
+            return transactions.toJs();  // Convert the Python list to a JS array
         } catch (error) {
             appendStatus('Failed to process the PDF file.', true, error.message);
+            throw error;  // Re-throw the error so it can be caught in the calling function
         }
     }
 
