@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     dropZone.style.pointerEvents = 'none';
     fileInput.disabled = true;
 
+    function clearStatus() {
+        statusElement.innerHTML = '';
+    }
+
     function appendStatus(message, isError = false, details = '') {
         const statusItem = document.createElement('div');
         statusItem.className = `status-item ${isError ? 'error' : 'success'}`;
@@ -88,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     async function handleFiles(files) {
+       clearStatus();
         for (const file of files) {
             if (file.type === 'application/pdf') {
                 updateProgressBar(10);
